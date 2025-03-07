@@ -99,3 +99,20 @@ export async function ringSet(key: RedisKey, value: string | number | Buffer, ti
     return (e as Error)?.message || "";
   }
 }
+
+/**
+ * Flush all to all ring shards.
+ */
+export async function ringFlushhAll(): Promise<Record<string, string>>{
+  const errors: Record<string, string> = {}
+  for (const shardName in ringShard) {
+    const c = ringShard[shardName];
+    try {
+      await c.flushall();
+      errors[shardName] = "";
+    } catch (e) {
+      errors[shardName] = (e as Error)?.message || "";
+    }
+  }
+  return errors;
+}
