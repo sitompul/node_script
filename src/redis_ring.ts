@@ -7,9 +7,12 @@ const ringNameList: string[] = [];
 /**
  * Initialize connection for each shard inside redis ring.
  * Array should be empty, to make sure all the connection is running properly.
+ * "connectionListEnv" is connection string list separated by ";"
  */
-export function connectToRing(options: RedisOptions): string[] {
-  const connectionListEnv = process.env.REDIS_RING_DSN || "";
+export function connectToRing(
+  connectionListEnv: string,
+  options: RedisOptions,
+): string[] {
   const connectionList = connectionListEnv.split(";");
   const errors: string[] = [];
 
