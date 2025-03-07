@@ -6,7 +6,7 @@ const ringNameList: string[] = [];
 
 /**
  * Initialize connection for each shard inside redis ring.
- * Array should be empty, to make sure all the connection is running properly.
+ * Array values should be all empty string (""), to make sure all the connection is running properly.
  * "connectionListEnv" is connection string list separated by ";"
  */
 export function connectToRing(
@@ -57,7 +57,10 @@ function getConnection(key: RedisKey): Redis {
 /**
  * Get redis value using ring. If timeoutMs present will do promise race and return null if timeout.
  */
-export async function ringGet(key: RedisKey, timeoutMs?: number): Promise<string | null> {
+export async function _ringGet(
+  key: RedisKey,
+  timeoutMs?: number,
+): Promise<string | null> {
   const conn = getConnection(key);
   const result = conn.get(key);
   
@@ -78,7 +81,11 @@ export async function ringGet(key: RedisKey, timeoutMs?: number): Promise<string
 /**
  * Set value using ring. If timeoutMs present will do promise race and return "timeout" if timeout.
  */
-export async function ringSet(key: RedisKey, value: string | number | Buffer, timeoutMs?: number): Promise<string> {
+export async function ringSet(
+  key: RedisKey,
+  value: string | number | Buffer,
+  timeoutMs?: number,
+): Promise<string> {
   try {
     const conn = getConnection(key);
     const result = conn.set(key, value);

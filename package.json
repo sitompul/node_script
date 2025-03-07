@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "hrw-hash": "^2.0.3",
-    "ioredis": "^5.6.0"
+    "ioredis": "^5.6.0",
+    "mysql2": "^3.13.0"
   }
 }
