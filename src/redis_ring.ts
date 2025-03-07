@@ -55,23 +55,47 @@ function getConnection(key: RedisKey): Redis {
 }
 
 /**
- * Get redis value using ring.
+ * Get redis value using ring. If timeoutMs present will do promise race and return null if timeout.
  */
-export async function ringGet(key: RedisKey): Promise<string | null> {
+export async function ringGet(key: RedisKey, timeoutMs?: number): Promise<string | null> {
   const conn = getConnection(key);
-  const result = await conn.get(key);
-  return result;
+  const result = conn.get(key);
+  
+  if (timeoutMs == null) {
+    return await result;
+  } else {
+    const timeout: Promise<null> = new Promise((resolve) =>
+      setTimeout(() => resolve(null), timeoutMs)
+    );
+    const p: Promise<string | null> = Promise.race([
+      result,
+      timeout,
+    ]);
+    return await p;
+  }
 }
 
 /**
- * Set value using ring.
+ * Set value using ring. If timeoutMs present will do promise race and return "timeout" if timeout.
  */
-export async function ringSet(key: RedisKey, value: string | number | Buffer): Promise<boolean> {
+export async function ringSet(key: RedisKey, value: string | number | Buffer, timeoutMs?: number): Promise<string> {
   try {
     const conn = getConnection(key);
-    await conn.set(key, value);
-    return true;
-  } catch {
-    return false;
+    const result = conn.set(key, value);
+
+    if (timeoutMs == null) {
+      return await result;
+    } else {
+      const timeout: Promise<string> = new Promise((resolve) =>
+        setTimeout(() => resolve("timeout"), timeoutMs)
+      );
+      const p: Promise<string> = Promise.race([
+        result,
+        timeout,
+      ]);
+      return await p;
+    }
+  } catch (e) {
+    return (e as Error)?.message || "";
   }
 }
