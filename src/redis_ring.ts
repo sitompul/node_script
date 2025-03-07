@@ -84,11 +84,12 @@ export async function _ringGet(
 export async function ringSet(
   key: RedisKey,
   value: string | number | Buffer,
+  expSec: number,
   timeoutMs?: number,
 ): Promise<string> {
   try {
     const conn = getConnection(key);
-    const result = conn.set(key, value);
+    const result = conn.set(key, value, "EX", expSec);
 
     if (timeoutMs == null) {
       return await result;
@@ -110,7 +111,7 @@ export async function ringSet(
 /**
  * Flush all to all ring shards.
  */
-export async function ringFlushhAll(): Promise<Record<string, string>>{
+export async function ringFlushAll(): Promise<Record<string, string>>{
   const errors: Record<string, string> = {}
   for (const shardName in ringShard) {
     const c = ringShard[shardName];
