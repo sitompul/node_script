@@ -24,8 +24,8 @@ export function isMutationQuery(query: string): boolean {
 }
 
 export type Connection = {
-  write: mysql.Connection,
-  read: mysql.Connection[],
+  write: mysql.Connection, // Master database
+  read: mysql.Connection[], // Slave databases to do read query.
 };
 
 let conn: Connection | null = null;
@@ -35,7 +35,7 @@ let conn: Connection | null = null;
  */
 export async function connectReplicas(): Promise<Connection> {
   if (conn) return conn;
-  const write = await mysql.createConnection("");
+  const write = await mysql.createConnection(process.env.DATABASE_MASTER || "");
   const readConnectionString = (process.env.DATABASE_REPLICAS_DSN || "").split(";");
   const read: mysql.Connection[] = [];
   readConnectionString.forEach(async (val, index) => {
@@ -61,6 +61,7 @@ export async function getConnection(sql: string): Promise<mysql.Connection> {
     return conn.write;
   } else {
     // If read array is empty use write database to read.
+    // This condition happens when there is replication or read only db instance.
     if (conn.read.length === 0) {
       return conn.write;
     } else {
@@ -86,16 +87,16 @@ export async function execute<T extends QueryResult>(sql: string, values: any): 
 }
 
 export async function txBegin(): Promise<void> {
-  const c = await getConnection("INSERT"); // Force connection to use Write database since it's transaction.
-  await c.query("START TRANSACTION");
+  const c = conn?.write; // Force connection to use Write database since it's transaction.
+  if (c) await c.query("START TRANSACTION");
 }
 
 export async function txCommit(): Promise<void> {
-  const c = await getConnection("INSERT"); // Force connection to use Write database since it's transaction.
-  await c.query("COMMIT");
+  const c = conn?.write; // Force connection to use Write database since it's transaction.
+  if (c) await c.query("COMMIT");
 }
 
 export async function txRollback(): Promise<void> {
-  const c = await getConnection("INSERT"); // Force connection to use Write database since it's transaction.
-  await c.query("ROLLBACK");
+  const c = conn?.write; // Force connection to use Write database since it's transaction.
+  if (c) await c.query("ROLLBACK");
 }
