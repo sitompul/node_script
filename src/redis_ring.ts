@@ -30,7 +30,7 @@ export function connectToRing(
         errors[index] = "failed to ping redis connection";
       }
     } catch (e) {
-      errors[index] = (e as Error)?.message || "";
+      errors[index] = (e as Error)?.message || "failed to connect to redis ring";
     }
   });
 
@@ -104,7 +104,7 @@ export async function ringSet(
       return await p;
     }
   } catch (e) {
-    return (e as Error)?.message || "";
+    return (e as Error)?.message || "failed to set value via ring";
   }
 }
 
@@ -119,7 +119,7 @@ export async function ringFlushAll(): Promise<Record<string, string>>{
       await c.flushall();
       errors[shardName] = "";
     } catch (e) {
-      errors[shardName] = (e as Error)?.message || "";
+      errors[shardName] = (e as Error)?.message || "failed to flush via ring";
     }
   }
   return errors;

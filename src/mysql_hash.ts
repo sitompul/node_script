@@ -89,7 +89,11 @@ export async function compareDb(
     }
   });
 
-  return [ troubledTable, "" ];
+  const errMessage = troubledTable.length
+    ? "one of the table has a problem during checksum"
+    : "";
+
+  return [ troubledTable, errMessage ];
 }
 
 async function main() {
