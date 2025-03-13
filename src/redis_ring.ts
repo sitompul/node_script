@@ -1,8 +1,36 @@
 import Redis, { RedisKey, RedisOptions } from "ioredis";
-import { rendezvousHash } from "./hrw-hash";
+import { Xxh64 } from "@node-rs/xxhash";
+import { Rendezvous } from "./Rendezvous";
+
+// Mimic xxh64 hash on golang.
+export function sum64String(input: string): bigint {
+  const xxh64 = new Xxh64();
+  xxh64.update(input);
+  const result = xxh64.digest();
+  xxh64.reset();
+  return result;
+}
+
+// Rendezvous Hashing (HRW) function
+export function rendezvousHash(key: string, nodes: string[]): string {
+  if (nodes.length === 0) return "";
+
+  let bestNode: string = "";
+  let highestScore: bigint = 0n; // Initialize to a very small BigInt
+
+  for (const node of nodes) {
+    const score = sum64String(key + String(node)); // Hash (key + node)
+    if (score > highestScore) {
+      highestScore = score;
+      bestNode = node;
+    }
+  }
+
+  return bestNode;
+}
 
 const ringShard: Record<string, Redis> = {};
-const ringNameList: string[] = [];
+let r: Rendezvous;
 
 /**
  * Initialize connection for each shard inside redis ring.
@@ -15,6 +43,7 @@ export function connectToRing(
 ): string[] {
   const connectionList = connectionListEnv.split(";");
   const errors: string[] = [];
+  const ringNameList: string[] = [];
 
   connectionList.forEach(async (conn, index) => {
     const c = new Redis(conn, options);
@@ -34,6 +63,8 @@ export function connectToRing(
     }
   });
 
+  r = new Rendezvous(ringNameList, sum64String);
+
   return errors;
 }
 
@@ -49,7 +80,7 @@ function getConnection(key: RedisKey): Redis {
     // Key is buffer.
     stringKey = key.toString("utf-8");
   }
-  const shardName = rendezvousHash(stringKey, ringNameList);
+  const shardName = r.lookup(stringKey);
   const conn = ringShard[shardName];
   return conn;
 }
@@ -125,7 +156,6 @@ export async function ringFlushAll(): Promise<Record<string, string>>{
   return errors;
 }
 
-async function main(): Promise<void> {
-}
+(async function(): Promise<void> {
+})();
 
-main();
