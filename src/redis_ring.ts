@@ -1,5 +1,5 @@
-import { hrwHash } from "hrw-hash" ;
 import Redis, { RedisKey, RedisOptions } from "ioredis";
+import { rendezvousHash } from "./hrw-hash";
 
 const ringShard: Record<string, Redis> = {};
 const ringNameList: string[] = [];
@@ -49,7 +49,7 @@ function getConnection(key: RedisKey): Redis {
     // Key is buffer.
     stringKey = key.toString("utf-8");
   }
-  const shardName = hrwHash(stringKey, ringNameList)[0];
+  const shardName = rendezvousHash(stringKey, ringNameList);
   const conn = ringShard[shardName];
   return conn;
 }
@@ -57,7 +57,7 @@ function getConnection(key: RedisKey): Redis {
 /**
  * Get redis value using ring. If timeoutMs present will do promise race and return null if timeout.
  */
-export async function _ringGet(
+export async function ringGet(
   key: RedisKey,
   timeoutMs?: number,
 ): Promise<string | null> {
@@ -124,3 +124,8 @@ export async function ringFlushAll(): Promise<Record<string, string>>{
   }
   return errors;
 }
+
+async function main(): Promise<void> {
+}
+
+main();
